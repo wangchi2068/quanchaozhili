@@ -1,0 +1,25 @@
+{
+  "name": "quanchaozhili",
+  "version": "0.1.0",
+  "description": "《全巢之力》：基于状态化 LLM Agent 运行时的互动叙事游戏——玩家扮演一个被蚂蚁奉为神的普通人",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "smoke": "node scripts/smoke.ts",
+    "web": "node src/server.ts",
+    "test": "node --test test/*.test.ts",
+    "art": "node assets/campaigns/ants/art/make-art.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.9.3",
+    "typescript-language-server": "^5.3.0"
+  },
+  "dependencies": {
+    "ws": "^8.21.2"
+  }
+}
