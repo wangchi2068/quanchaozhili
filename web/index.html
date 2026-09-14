@@ -1023,9 +1023,37 @@ header{
 .arc-intro-credit .credit-note{color:var(--text-dark);font-size:11.5px;margin-top:4px}
 .arc-intro-credit .credit-note strong{color:var(--text-muted)}
 @media (max-width:900px){.arc-intro-credit{font-size:11.5px;padding:11px 14px}}
+
+/* ═══ 幕图虚化背景 ═══
+   把当前幕的配图铺到叙事区背后做一层极淡的底纹。
+   正文气泡本身是半透明的（alpha 0.74~0.88），所以这层必须压得很淡：
+   实拍大图若不降饱和，糊开后会变成一片浑浊的暖色污渍，反而吃掉可读性。 */
+.act-backdrop{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-position:center;background-size:cover;background-repeat:no-repeat;
+  filter:blur(34px) saturate(.55) brightness(.62);
+  transform:scale(1.14);          /* 放大一点，避免模糊后四边露白 */
+  opacity:.16;
+  transition:opacity .8s ease;
+}
+.act-backdrop::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(5,7,12,.55) 0%,rgba(5,7,12,.15) 38%,rgba(5,7,12,.62) 100%);
+}
+/* 正文气泡稍微加一点不透明度，把背景透光让掉，保证长段落读起来不费劲 */
+.msg.assistant .msg-body{
+  background:linear-gradient(180deg,rgba(13,17,25,.84) 0%,rgba(8,11,18,.93) 100%);
+}
+@media (max-width:900px){
+  .act-backdrop{filter:blur(26px) saturate(.55) brightness(.62);opacity:.13}
+}
+@media (prefers-reduced-motion:reduce){.act-backdrop{transition:none}}
 </style>
 </head>
 <body>
+
+<!-- 幕图虚化背景：随主线切幕，图源由脚本同步（见文件末尾） -->
+<div class="act-backdrop" id="actBackdrop" aria-hidden="true"></div>
 
 <div class="vignette"></div>
 
@@ -2645,6 +2673,25 @@ window.addEventListener("keydown", (e) => {
 connect();
 // 保底：不管 WS 通不通，先用 HTTP 拉一次状态与历史（WS 永久不可用时存档/历史也能载入）
 void httpPollState();
+/* ── 幕图虚化背景：跟随当前幕的图源 ── */
+(function () {
+  var el = document.getElementById("actBackdrop");
+  if (!el || typeof updateActBanner !== "function") return;
+  function sync() {
+    var img = document.getElementById("actImg");
+    var src = img && img.getAttribute("src");
+    if (!src || el.dataset.src === src) return;
+    el.dataset.src = src;
+    el.style.backgroundImage = 'url("' + src + '")';
+  }
+  var orig = updateActBanner;
+  window.updateActBanner = function () {
+    var r = orig.apply(this, arguments);
+    try { sync(); } catch (e) {}
+    return r;
+  };
+  sync();
+})();
 </script>
 </body>
 </html>
