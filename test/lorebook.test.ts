@@ -32,11 +32,12 @@ test("activateLore：语义补充（剧情不出现关键词也能命中相关�
   assert.ok(contents.some((c) => c.includes("王总")), "语义相关（老板/老板娘）应被向量补充");
 });
 
-test("activateLoreHybrid：rank 标注来源与去重", () => {
+test("activateLoreHybrid：rank 标注来源与去重；语义名额只补真有共词的条目", () => {
   const entries = [
     entry({ keys: ["苏涟漪"], content: "内容甲：苏涟漪", insertionOrder: 0 }),
     entry({ keys: ["王总"], content: "内容乙：王总之怪话", insertionOrder: 1 }),
-    entry({ keys: [], content: "内容丙：老板娘功德点账本", insertionOrder: 2 }),
+    entry({ keys: [], content: "内容丙：老板娘把账本推给苏涟漪", insertionOrder: 2 }),
+    entry({ keys: [], content: "内容丁：天文台的望远镜与星图", insertionOrder: 3 }),
   ];
   const { entries: activated, rank } = activateLoreHybrid(entries, "苏涟漪提到王总的怪话", 8, 4);
   assert.equal(activated.length, rank.length);
@@ -44,8 +45,12 @@ test("activateLoreHybrid：rank 标注来源与去重", () => {
   const vec = rank.filter((r) => r === "vector").length;
   // 苏涟漪+王总为关键词命中
   assert.ok(kw >= 2);
-  // 至少补了 1 条向量召回（“老板娘”相关的内容丙），且不重复
+  // 向量补的是与上下文真有共词的丙（"老板娘…苏涟漪"），且不重复
   assert.ok(vec >= 1);
+  assert.ok(
+    !activated.some((e) => e.content.includes("天文台")),
+    "一个共同词都没有的条目不该被当成「语义相关」补进 system",
+  );
   const uniq = new Set(activated);
   assert.equal(uniq.size, activated.length, "不应出现重复条目");
 });

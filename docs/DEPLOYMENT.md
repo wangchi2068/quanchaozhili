@@ -1,6 +1,6 @@
 # 部署指南
 
-项目零运行时依赖、Node ≥ 22 原生运行 TypeScript，提供 Docker / Vercel / 内网穿透三条部署路径。**所有部署都必须先准备 `.env`（密钥不进镜像、不进代码库）。**
+项目只有一个运行时依赖（`ws`）、Node ≥ 22 原生运行 TypeScript，提供 Docker / Vercel / 内网穿透三条部署路径。**所有部署都必须先准备 `.env`（密钥不进镜像、不进代码库）。**
 
 ## 0. 准备 `.env`
 
@@ -14,14 +14,14 @@ cp .env.example .env
 ## 1. Docker（推荐，含数据持久化）
 
 ```bash
-git clone <仓库地址> wangdachui-pi && cd wangdachui-pi
+git clone <仓库地址> quanchaozhili && cd quanchaozhili
 cp .env.example .env   # 填 key
 docker compose up -d --build
 # 打开 http://<服务器IP>:7620
 ```
 
 - 数据持久化：`./state`（含 `state.db` SQLite）挂载为卷，升级重建不丢档；
-- 日志：`docker compose logs -f wangdachui-pi`；
+- 日志：`docker compose logs -f quanchaozhili`；
 - **请勿把 7620 端口裸暴露公网**（服务无鉴权），对外请套反向代理 + 鉴权。
 
 ### 1.1 Prometheus 指标采集（可选）

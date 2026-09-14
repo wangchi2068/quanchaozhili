@@ -1,6 +1,6 @@
 # wangdachui.pi · Stateful Multi-Turn LLM Agent Runtime
 
-A zero-dependency, stateful multi-turn LLM agent runtime in TypeScript (Node ≥ 22): deterministic context engineering, side-model structured memory, a tool-call loop with user decision cards, and multi-provider failover — with **no third-party runtime dependencies** (hand-written RFC 6455 WebSocket, SSE streaming, PNG chunk parsing, local n-gram TF-IDF retrieval).
+A zero-dependency, stateful multi-turn LLM agent runtime in TypeScript (Node ≥ 22): deterministic context engineering, side-model structured memory, a tool-call loop with user decision cards, and multi-provider failover — with **exactly one third-party runtime dependency** (`ws` for the WebSocket server; SSE streaming, PNG chunk parsing and local n-gram TF-IDF retrieval are hand-written).
 
 The bundled role-play campaign is just a demo application; the core is a general agent architecture where **deterministic code owns memory and state, and the model only writes generation**.
 
@@ -26,7 +26,7 @@ Full methodology, per-scenario tables, and failure analysis: [`reports/EVALUATIO
 - **Observability** — structured JSON-line logs + `GET /metrics` (Prometheus text: token usage, latency quantiles, provider switches, compression events).
 - **Zero-dependency engineering** — RFC 6455 server, SSE client, PNG chunk parsing, and TF-IDF vector retrieval all hand-written; Node 22 runs TS natively.
 
-Architecture decisions: [`docs/adr/`](docs/adr/README.md) (6 ADRs).
+Architecture decisions: [`docs/adr/`](docs/adr/README.md) (7 ADRs).
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ npm run web            # http://127.0.0.1:7620
 ```
 
 ```bash
-npm test               # 57 unit tests (mock LLM, no tokens)
+npm test               # 75 unit tests (mock LLM, no tokens)
 npx tsc --noEmit       # strict type check
 node scripts/eval/runner.ts   # eval harness (mock default; --live for real model)
 ```

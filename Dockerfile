@@ -6,6 +6,10 @@ WORKDIR /app
 
 # 仅复制运行时所需（排除 .env / state / node_modules）
 COPY package.json package-lock.json ./
+
+# 装依赖：运行时依赖是 ws（WebSocket 服务端），不装的话 CMD 一启动就 ERR_MODULE_NOT_FOUND
+RUN npm ci --omit=dev && npm cache clean --force
+
 COPY src ./src
 COPY web ./web
 COPY assets ./assets

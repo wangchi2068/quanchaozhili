@@ -114,10 +114,18 @@ export class VectorIndex {
     return this.docCount;
   }
 
-  /** 查询：返回按相似度降序的 topK 结果 */
-  query(queryText: string, topK = 5): Scored[] {
+  /**
+   * 查询：返回按相似度降序的 topK 结果。
+   * minScore：相似度下限，**只在传了正数时启用**（默认 0 = 不过滤，保持"取 topK"的旧语义）。
+   * 需要过滤是因为：余弦为 0 的条目等于「一个共同词都没有」，照样会占满 topK 名额；
+   * 调用方若拿它当"语义相关"来展示或注入 system prompt，就是往上下文里灌噪声。
+   * 要展示/注入的地方请传 0.02 之类的下限（见 server 的 /lore 与 activateLoreHybrid）。
+   */
+  query(queryText: string, topK = 5, minScore = 0): Scored[] {
     const qvec = tfidfVector(queryText, this.df, this.docCount);
-    const scored = this.docs.map((d, i) => ({ index: i, score: cosine(qvec, d.vec) }));
+    const scored = this.docs
+      .map((d, i) => ({ index: i, score: cosine(qvec, d.vec) }))
+      .filter((s) => minScore <= 0 || s.score > minScore);
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, topK);
   }

@@ -4,7 +4,7 @@
 
 | # | 标题 | 决策要点 |
 | --- | --- | --- |
-| [0001](0001-zero-dependency-runtime.md) | 零依赖运行时 | 手写 RFC6455/SSE/PNG chunk/本地向量检索；Node 22 原生运行 TS |
+| [0001](0001-zero-dependency-runtime.md) | 零依赖运行时 | 手写 RFC6455/SSE/PNG chunk/本地向量检索；Node 22 原生运行 TS（后为 WebSocket 服务端引入唯一运行时依赖 `ws`，其余仍为手写） |
 | [0002](0002-side-model-memory.md) | 确定性代码管记忆 | 旁侧模型结构化账本 + 前情提要压缩；模型输出永不改写 |
 | [0003](0003-multi-provider-failover.md) | 多 provider 故障转移 | 401/403/404/5xx/网络错误触发兜底；400/422 不触发；429 先本 provider 重试 |
 | [0004](0004-context-compression.md) | 上下文压缩策略 | system→前情提要→滑动窗口三层；归档可召回；摘要过短降级 |

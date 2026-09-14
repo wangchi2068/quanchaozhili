@@ -33,9 +33,17 @@ import {
 	type RollCard,
 	type RollOutcome,
 } from "./harness/roll-card.ts";
-import { Harness } from "./harness/harness.ts";
-import { LedgerService, snapshotText } from "./harness/memory-ledger.ts";
-import { ContextManager, estimateChars } from "./harness/context.ts";
+import { Harness, type TurnResult } from "./harness/harness.ts";
+import {
+	LedgerService,
+	snapshotText,
+	type LedgerUpdate,
+} from "./harness/memory-ledger.ts";
+import {
+	ContextManager,
+	estimateChars,
+	type PruneResult,
+} from "./harness/context.ts";
 import {
 	createSnapshot,
 	deleteSnapshot,
@@ -81,6 +89,11 @@ const client = new LlmClient(cfg);
 const illustrator = new Illustrator(cfg);
 /** 全局每日出图计数（进程内；serverless 多实例下为近似值，仅作公开链接的兜底保险） */
 const illDaily = { day: "", count: 0 };
+/**
+ * 全局每日 token 计数（进程内；多实例下是近似值）。
+ * 会话级上限挡不住「换个 sid 接着刷」——公开链接必须再有一道不跟会话走的闸门。
+ */
+const tokenDaily = { day: "", total: 0 };
 
 /**
  * 为会话最近一回合的正文出图（带缓存/去重/上限）。
@@ -223,17 +236,22 @@ const sessions = new Map<string, SessionState>();
 /** 会话 LRU 上限：超过则回收最久未访问的（防常驻内存泄漏） */
 const MAX_SESSIONS = 64;
 
-/** 限制请求 body 体积（防超大 body 打爆内存），超过返回 null */
+/** 限制请求 body 体积（防超大 body 打爆内存），超过返回 null。
+ *  按**字节**判长、最后一次性解码：逐块 `body += chunk` 会把跨块边界的
+ *  多字节 UTF-8 截成乱码（中文场景），而且按字符数算等于把上限放大三倍。 */
 async function readBodyLimited(
 	req: import("node:http").IncomingMessage,
 	maxBytes = 5 * 1024 * 1024,
 ): Promise<string | null> {
-	let body = "";
+	const chunks: Buffer[] = [];
+	let bytes = 0;
 	for await (const chunk of req) {
-		body += chunk;
-		if (body.length > maxBytes) return null;
+		const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
+		bytes += buf.length;
+		if (bytes > maxBytes) return null;
+		chunks.push(buf);
 	}
-	return body;
+	return Buffer.concat(chunks).toString("utf8");
 }
 /** 回收最久未访问的非 default 会话 */
 function touchSession(st: SessionState): void {
@@ -690,7 +708,9 @@ const server = createServer(async (req, res) => {
 		if (req.method === "POST" && url.pathname === "/api/chat") {
 			// HTTP 对话兜底（Vercel 无持久 WS 时）：非流式，无决策卡/掷骰交互（自动默认选），返回完整正文 + state
 			const st = getSession(url.searchParams.get("sid"));
-			const body = (await readBodyLimited(req, 1024)) ?? "";
+			// 1024 字节挡不住一句中文（UTF-8 下一个字 3 字节），玩家会拿到
+			// 「缺少 text」这种误导性 400；放宽到 4096，正文照旧截到 500 字。
+			const body = (await readBodyLimited(req, 4096)) ?? "";
 			let text = "";
 			try {
 				text = String(JSON.parse(body).text ?? "").slice(0, 500);
@@ -1157,9 +1177,9 @@ async function handleCommand(
 								.map((e) => `${e.keys.join(" ")} ${e.content}`),
 						);
 					st.loreIndex = idx;
-					const hits = idx.query(arg ?? "", 4);
+					const hits = idx.query(arg ?? "", 4, 0.02);
 					if (!hits.length) {
-						notice(`世界书未命中「${arg}”`);
+						notice(`世界书未命中「${arg}」`);
 						break;
 					}
 					notice(
@@ -1205,67 +1225,142 @@ function checkTokenBudget(st: SessionState): void {
 	if (cfg.maxTokensPerDay <= 0) return;
 	const today = new Date().toISOString().slice(0, 10);
 	if (st.tokenUsage.day !== today) st.tokenUsage = { day: today, total: 0 };
-	if (st.tokenUsage.total >= cfg.maxTokensPerDay) {
+	if (tokenDaily.day !== today) {
+		tokenDaily.day = today;
+		tokenDaily.total = 0;
+	}
+	// 两道闸门：会话级（玩家自己看得见）+ 进程级（换个 sid 也绕不过去）
+	if (
+		st.tokenUsage.total >= cfg.maxTokensPerDay ||
+		tokenDaily.total >= cfg.maxTokensPerDay
+	) {
 		throw new TokenBudgetExceeded(
 			`⚠ 今日 token 用量已达上限（${cfg.maxTokensPerDay}），请明日再试或 /new 新会话`,
 		);
 	}
 }
 
-/** 跑一轮（由 chatOnce 调用；空正文时会被重试一次） */
-async function runTurnOnce(st: SessionState, text: string): Promise<string> {
+/** 一条通道可选挂的钩子：正文流式、决策卡、掷骰、正文就绪回调。HTTP 通道不挂。 */
+interface TurnHooks {
+	mode?: "ws" | "http";
+	onNarrativeDelta?: (delta: string) => void;
+	onDecisionRequested?: (card: DecisionCard) => Promise<string>;
+	onRollRequested?: (card: RollCard) => Promise<RollOutcome>;
+	/** 正文已生成、**还没开始记账**时回调：WS 用它先把 turn_done 发出去，
+	 *  否则玩家要多等一次记账模型调用才看到「本轮结束」。 */
+	onNarrativeReady?: (info: { result: TurnResult; estTokens: number }) => void;
+}
+
+/** 一回合的完整产出：调用方拿去回包，不必自己再落一次账 */
+interface TurnOutcome {
+	result: TurnResult;
+	prune: PruneResult;
+	ledgerUpdate: LedgerUpdate;
+	/** 本回合推进到的主线阶段（没推进则 undefined） */
+	advanced?: Phase;
+	/** 自动存档的标签（没触发则 undefined） */
+	autoSnapshot?: string;
+}
+
+/**
+ * 跑一回合：WebSocket 与 HTTP 两条通道**共用这一份实现**。
+ * 此前两条通道各写一遍（handleChat 与 runTurnOnce），已经漂出四处不一致：
+ * 空正文重试只在 HTTP、自动存档只在 WS、token 记账口径不同、空回合会把同一句
+ * 玩家输入喂给模型两次。合并成一条路径，靠 hooks 区分「要不要流式/交互卡」。
+ */
+async function runTurn(
+	st: SessionState,
+	text: string,
+	hooks: TurnHooks = {},
+): Promise<TurnOutcome> {
 	st.lastContext = text;
 	logger.info("turn_start", {
 		sid: st.sid,
 		turns: st.ctx.totalTurns,
-		mode: "http",
+		...(hooks.mode ? { mode: hooks.mode } : {}),
 	});
 	const system = buildSystem(st);
 	const visible = st.ctx.visibleMessages(system, text);
-	const result = await st.harness.runTurn(visible, { stateDir: st.stateDir });
+	let result = await st.harness.runTurn(visible, {
+		stateDir: st.stateDir,
+		...hooks,
+	});
+	// 空正文：主模型（gemini-3.8-flash）的思考链偶发吃光输出预算。重试一次——
+	// **必须在任何落账之前重试**，否则历史里会多出一个空回合，且同一句玩家输入
+	// 会被喂给模型两次。两条通道都走这一处，不再各写一遍。
+	if (!result.content.trim()) {
+		logger.warn("empty_content_retry", {
+			sid: st.sid,
+			turns: st.ctx.totalTurns,
+		});
+		result = await st.harness.runTurn(visible, {
+			stateDir: st.stateDir,
+			...hooks,
+		});
+	}
+	// 先把本回合正文落到 lastContext 再回调：客户端收到 turn_done 会立刻来要配图，
+	// 若晚于 turn_done 再写，配图接口会读到上一回合（或空）的正文——竞态。
+	st.lastContext = `${text}\n${result.content}`;
+	st.lastNarrative = result.content;
+	hooks.onNarrativeReady?.({
+		result,
+		estTokens: Math.round(estimateChars(visible) / 3),
+	});
+	// —— 以下为落账，两条通道完全一致，且只落一次 ——
 	if (result.usageTotal > 0) {
 		const today = new Date().toISOString().slice(0, 10);
 		if (st.tokenUsage.day !== today) st.tokenUsage = { day: today, total: 0 };
 		st.tokenUsage.total += result.usageTotal;
+		if (tokenDaily.day !== today) {
+			tokenDaily.day = today;
+			tokenDaily.total = 0;
+		}
+		tokenDaily.total += result.usageTotal;
 	}
 	const prune = await st.ctx.endTurn({
 		systemText: system,
 		userInput: text,
 		added: result.added,
 	});
+	// 压缩欠账异步补压（不阻塞玩家；批次上限由 drainCompression 内部限制）
 	if (prune.pending) void st.ctx.drainCompression(system).catch(() => {});
-	await st.ledger.updateAfterTurn({
+	const ledgerUpdate = await st.ledger.updateAfterTurn({
 		characterName: st.card?.name ?? "",
 		userInput: text,
 		narrative: result.content,
 		turns: st.ctx.totalTurns,
 	});
-	st.lastContext = `${text}\n${result.content}`;
-	st.lastNarrative = result.content;
-	st.director.advance(
+	// 主线推进：把最近剧情（输入+正文+账本）交给导演比对关键词/收束句
+	const adv = st.director.advance(
 		`${st.lastContext}\n${snapshotText(st.ledger.load())}`,
 		st.ctx.totalTurns,
 	);
-	return result.content;
+	// 自动存档：每 N 回合存一次，防丢档。
+	// 原来只挂在 WS 路径上，而线上走的是 HTTP——「防丢档」在最需要它的地方一直没跑。
+	let autoSnapshot: string | undefined;
+	if (
+		cfg.autoSnapshotEvery > 0 &&
+		st.ctx.totalTurns > 0 &&
+		st.ctx.totalTurns % cfg.autoSnapshotEvery === 0
+	) {
+		autoSnapshot = `自动存档·第${st.ctx.totalTurns}回合`;
+		createSnapshot(st.stateDir, autoSnapshot);
+	}
+	return {
+		result,
+		prune,
+		ledgerUpdate,
+		advanced: adv.advanced ? adv.to : undefined,
+		autoSnapshot,
+	};
 }
 
-/**
- * HTTP 通道的一回合（WebSocket 通道是 handleChat，两者共用 runTurnOnce 的内核）。
- * 这里**空正文会重试一次**：主模型（gemini-3.8-flash）的思考链偶发吃光输出预算、
- * 返回空正文——线上实测撞到过，玩家会随机看到「本轮无正文」。重试挡这种抖动。
- */
+/** HTTP 通道的一回合：不挂 hooks（无流式、无交互卡），只取正文。 */
 async function chatOnce(st: SessionState, text: string): Promise<string> {
 	if (!st.card) throw new Error("请先导入角色卡");
 	checkTokenBudget(st);
-	let out = await runTurnOnce(st, text);
-	if (!out.trim()) {
-		logger.warn("empty_content_retry", {
-			sid: st.sid,
-			turns: st.ctx.totalTurns,
-		});
-		out = await runTurnOnce(st, text);
-	}
-	return out || "（本轮无正文，换个说法试试）";
+	const out = await runTurn(st, text, { mode: "http" });
+	return out.result.content || "（本轮无正文，换个说法试试）";
 }
 
 async function handleChat(
@@ -1277,7 +1372,7 @@ async function handleChat(
 		conn.send({ type: "error", message: "请先导入角色卡" });
 		return;
 	}
-	// token 护栏：每会话每日上限（0 = 不限）
+	// token 护栏：会话级 + 进程级每日上限（0 = 不限）
 	try {
 		checkTokenBudget(st);
 	} catch (e) {
@@ -1285,13 +1380,10 @@ async function handleChat(
 		return;
 	}
 	try {
-		st.lastContext = text;
 		const t0 = Date.now();
-		logger.info("turn_start", { sid: st.sid, turns: st.ctx.totalTurns });
-		const system = buildSystem(st);
-		const visible = st.ctx.visibleMessages(system, text);
-		const result = await st.harness.runTurn(visible, {
-			stateDir: st.stateDir,
+		// 与 HTTP 通道共用同一条回合路径，只在这里挂上流式与交互卡
+		const out = await runTurn(st, text, {
+			mode: "ws",
 			onNarrativeDelta: (d) => conn.send({ type: "delta", text: d }),
 			onDecisionRequested: (cardData: DecisionCard) => {
 				const wait = new Promise<string>((resolve) => {
@@ -1325,89 +1417,55 @@ async function handleChat(
 					),
 				]);
 			},
-		});
-		if (result.stoppedBy === "max-turns")
-			conn.send({
-				type: "warn",
-				message: "本轮达到工具循环上限，正文可能不完整，可重发或输入『继续』",
-			});
-		else if (!result.content.trim())
-			conn.send({
-				type: "warn",
-				message: "模型本轮未产出正文（可能只输出了思考链），换个说法重发试试",
-			});
-		else if (result.lastFinishReason === "length")
-			conn.send({
-				type: "warn",
-				message: "回复达到长度上限被截断，输入『继续』可接着写",
-			});
-		// 先把本回合正文落到 lastContext：客户端收到 turn_done 会立刻来要配图，
-		// 若晚于 turn_done 再写，配图接口会读到上一回合（或空）的正文——竞态。
-		st.lastContext = `${text}\n${result.content}`;
-		st.lastNarrative = result.content;
-		conn.send({
-			type: "turn_done",
-			stats: {
-				modelCalls: result.modelCalls,
-				stoppedBy: result.stoppedBy,
-				tools: result.tools,
-				decisions: result.decisions,
-				estTokens: Math.round(estimateChars(visible) / 3), // 字符估算，仅供展示
+			// 正文一出就先回包：不让玩家干等记账、主线判定那几次模型调用
+			onNarrativeReady: ({ result, estTokens }) => {
+				if (result.stoppedBy === "max-turns")
+					conn.send({
+						type: "warn",
+						message:
+							"本轮达到工具循环上限，正文可能不完整，可重发或输入『继续』",
+					});
+				else if (!result.content.trim())
+					conn.send({
+						type: "warn",
+						message:
+							"模型本轮未产出正文（可能只输出了思考链），换个说法重发试试",
+					});
+				else if (result.lastFinishReason === "length")
+					conn.send({
+						type: "warn",
+						message: "回复达到长度上限被截断，输入『继续』可接着写",
+					});
+				conn.send({
+					type: "turn_done",
+					stats: {
+						modelCalls: result.modelCalls,
+						stoppedBy: result.stoppedBy,
+						tools: result.tools,
+						decisions: result.decisions,
+						estTokens, // 字符估算，仅供展示
+					},
+				});
 			},
 		});
-		if (result.usageTotal > 0) {
-			const today = new Date().toISOString().slice(0, 10);
-			if (st.tokenUsage.day !== today) st.tokenUsage = { day: today, total: 0 };
-			st.tokenUsage.total += result.usageTotal;
-		}
-		const prune = await st.ctx.endTurn({
-			systemText: system,
-			userInput: text,
-			added: result.added,
-		});
-		// 压缩欠账异步补压（不阻塞玩家；批次上限由 drainCompression 内部限制）
-		if (prune.pending) {
-			void st.ctx.drainCompression(system).catch(() => {});
-		}
-		const up = await st.ledger.updateAfterTurn({
-			characterName: st.card.name,
-			userInput: text,
-			narrative: result.content,
-			turns: st.ctx.totalTurns,
-		});
-		// 主线推进：把最近剧情（输入+正文+账本）交给导演比对关键词
-		const adv = st.director.advance(
-			`${st.lastContext}\n${snapshotText(st.ledger.load())}`,
-			st.ctx.totalTurns,
-		);
-		if (adv.advanced)
-			conn.send({ type: "warn", message: `✦ 主线推进：${adv.to?.title}` });
-		// 自动存档：每 N 回合存一次，防丢档
-		if (
-			cfg.autoSnapshotEvery > 0 &&
-			st.ctx.totalTurns > 0 &&
-			st.ctx.totalTurns % cfg.autoSnapshotEvery === 0
-		) {
-			const snap = createSnapshot(
-				st.stateDir,
-				`自动存档·第${st.ctx.totalTurns}回合`,
-			);
+		if (out.advanced)
+			conn.send({ type: "warn", message: `✦ 主线推进：${out.advanced.title}` });
+		if (out.autoSnapshot)
 			conn.send({
 				type: "warn",
 				message: `💾 已自动存档（第 ${st.ctx.totalTurns} 回合）`,
 			});
-		}
 		conn.send({
 			type: "state",
 			state: collectState(st),
-			prune,
-			ledgerUpdate: up,
+			prune: out.prune,
+			ledgerUpdate: out.ledgerUpdate,
 		});
 		logger.info("turn_done", {
 			sid: st.sid,
 			latencyMs: Date.now() - t0,
-			modelCalls: result.modelCalls,
-			usageTotal: result.usageTotal,
+			modelCalls: out.result.modelCalls,
+			usageTotal: out.result.usageTotal,
 			turns: st.ctx.totalTurns,
 		});
 		metrics.inc("turn.completed");

@@ -100,7 +100,8 @@ export function activateLoreHybrid(
     const candidates = rest.filter((e) => !chosen.has(e));
     try {
       const index = cachedIndex ?? new VectorIndex(candidates.map((e) => `${e.keys.join(" ")} ${e.content}`));
-      for (const hit of index.query(contextText, Math.min(vectorBudget, budget))) {
+      // 0.02 的下限：余弦为 0 的条目等于"一个共同词都没有"，补进 system 只是噪声
+      for (const hit of index.query(contextText, Math.min(vectorBudget, budget), 0.02)) {
         const e = candidates[hit.index];
         if (!e) continue;
         vector.push(e);

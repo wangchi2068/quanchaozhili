@@ -83,7 +83,10 @@ export function loadConfig(): Config {
     compressModel: process.env.WANGDACHUI_COMPRESS_MODEL || undefined,
     contextBudgetChars: Number(process.env.WANGDACHUI_CONTEXT_BUDGET_CHARS ?? 24000),
     maxLoopTurns: Number(process.env.WANGDACHUI_MAX_LOOP_TURNS ?? 10),
-    maxTokensPerDay: Number(process.env.WANGDACHUI_MAX_TOKENS_PER_DAY ?? 0),
+    // 默认给一个有限值。0 = 不限，而「忘了配」在公开链接上等于裸奔：
+    // 线上曾经没设这个变量，整道 token 护栏是空的（默认 0 + 闸门首行直接 return）。
+    // 3M ≈ 一百个回合，正常玩家碰不到，脚本刷则会被挡住。
+    maxTokensPerDay: Number(process.env.WANGDACHUI_MAX_TOKENS_PER_DAY ?? 3_000_000),
     stateDir: stateMode === "tmp" ? resolve("/tmp", "quanchaozhili-state") : resolve(process.cwd(), "state"),
     autoSnapshotEvery: Number(process.env.WANGDACHUI_AUTO_SNAPSHOT_EVERY ?? 5),
     campaign: process.env.WANGDACHUI_CAMPAIGN || "ants", // 默认《全巢之力》

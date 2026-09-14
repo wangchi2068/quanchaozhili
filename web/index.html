@@ -227,105 +227,6 @@ header{
   transition:width .6s ease;
 }
 
-/* ───────────── 幕图：微距夜巡环境视窗 + 剧场级画卷 ───────────── */
-#actBanner{
-  position:relative;flex-shrink:0;
-  height:96px;overflow:hidden;
-  background:radial-gradient(120% 180% at 50% -20%, rgba(255,184,119,.08), var(--bg-space) 70%, var(--bg-abyss) 100%);
-  transition:height .38s cubic-bezier(.22,.8,.24,1), opacity .3s ease, box-shadow .3s ease;
-  user-select:none;
-}
-/* 向下平滑溶夜遮罩：底边柔和羽化融入对话流，中下部关键视区通透无遮挡 */
-#actBanner::after{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
-  background:
-    linear-gradient(180deg, rgba(5,7,12,.18) 0%, transparent 18%, transparent 74%, rgba(5,7,12,.34) 88%, var(--bg-abyss) 100%),
-    linear-gradient(90deg, rgba(5,7,12,.40) 0%, transparent 8%, transparent 92%, rgba(5,7,12,.40) 100%);
-}
-#actBanner::before{
-  content:"";position:absolute;left:8%;right:8%;bottom:0;height:1px;z-index:2;pointer-events:none;
-  background:radial-gradient(ellipse at center, rgba(217,184,119,.22) 0%, transparent 75%);
-}
-#actBanner img{
-  width:100%;height:100%;object-fit:cover;object-position:center 85%;
-  display:block;opacity:1;filter:brightness(1.03) contrast(1.02) saturate(1.06);
-  transition:opacity .5s ease, transform 8s cubic-bezier(.1,.9,.2,1);
-  cursor:zoom-in;
-}
-#actBanner:hover img{transform:scale(1.03)}
-
-.act-caption{
-  position:absolute;left:24px;bottom:12px;z-index:3;
-  display:flex;align-items:center;gap:12px;
-  cursor:pointer;
-  transition:transform .2s ease;
-}
-.act-caption:hover{transform:translateX(2px)}
-.act-caption .act-no{
-  font-family:var(--font-serif);font-size:17px;letter-spacing:.22em;font-weight:600;
-  background:linear-gradient(135deg,#fffaf0 0%,#f0d8a8 45%,#d9b877 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  text-shadow:0 0 24px rgba(240,216,168,.3);
-  display:inline-flex;align-items:center;gap:6px;
-}
-.act-caption .act-tag{
-  font-size:11px;letter-spacing:.12em;color:var(--text-muted);
-  background:rgba(8,11,18,.75);backdrop-filter:blur(8px);
-  padding:3px 11px;border-radius:999px;border:1px solid var(--border-brass);
-  text-shadow:0 1px 8px rgba(0,0,0,.9);
-  max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.act-caption .act-hint{
-  font-size:10.5px;letter-spacing:.1em;color:var(--brass-light);
-  display:inline-flex;align-items:center;gap:4px;
-  opacity:0;transform:translateX(-6px);
-  transition:opacity .25s ease, transform .25s ease;
-  pointer-events:none;
-}
-#actBanner:hover .act-caption .act-hint{opacity:.85;transform:translateX(0)}
-
-/* 操作按钮区 */
-.act-actions{
-  position:absolute;right:20px;bottom:10px;z-index:3;
-  display:flex;align-items:center;gap:8px;
-}
-#actToggle, .act-theater-btn{
-  padding:4px 11px;border-radius:999px;font-size:11px;
-  color:var(--text-muted);cursor:pointer;
-  border:1px solid var(--border-brass);
-  background:rgba(8,11,18,.78);backdrop-filter:blur(8px);
-  display:inline-flex;align-items:center;gap:5px;
-  transition:color .2s, border-color .2s, background .2s, box-shadow .2s;
-}
-#actToggle:hover, .act-theater-btn:hover{
-  color:var(--brass-light);border-color:var(--border-gold);
-  background:rgba(217,184,119,.12);
-  box-shadow:0 0 14px rgba(217,184,119,.2);
-}
-
-/* 折叠态：视窗高度归零，折叠按钮作为轻量胶囊优雅悬浮于右上角 */
-#actBanner.collapsed{
-  height:0;min-height:0;overflow:visible;background:transparent;
-}
-#actBanner.collapsed::before, #actBanner.collapsed::after{display:none}
-#actBanner.collapsed img{display:none}
-#actBanner.collapsed .act-caption, #actBanner.collapsed .act-theater-btn{display:none}
-#actBanner.collapsed #actToggle{
-  position:absolute;right:20px;top:10px;bottom:auto;
-  z-index:20;pointer-events:auto;
-  border-color:var(--border-gold);
-  background:rgba(13,17,25,.88);
-  box-shadow:0 4px 18px rgba(0,0,0,.7), 0 0 14px rgba(217,184,119,.2);
-}
-
-/* 切幕金光呼吸波 */
-@keyframes actPulse{
-  0%{box-shadow:inset 0 0 0 rgba(217,184,119,0)}
-  40%{box-shadow:inset 0 0 32px rgba(255,184,119,.28)}
-  100%{box-shadow:inset 0 0 0 rgba(217,184,119,0)}
-}
-.act-pulse{animation:actPulse .7s ease-out}
-
 /* ───────────── 剧场全幅鉴赏模态 (Cinematic Theater Lightbox) ───────────── */
 .act-theater-backdrop{
   position:fixed;inset:0;z-index:100;
@@ -957,7 +858,6 @@ header{
     transform:translateX(0);
     visibility:visible;
   }
-  #actBanner.collapsed #actToggle{right:16px}
 }
 @media (max-width:720px){
   header{
@@ -978,14 +878,6 @@ header{
   .action-btn{padding:5px 8px;font-size:11px;gap:4px}
   #messages{padding:18px 12px 6px}
   .composer-wrapper{padding:10px 12px 16px}
-  #actBanner{height:58px}
-  .act-caption{left:12px;bottom:8px;gap:6px}
-  .act-caption .act-no{font-size:13.5px;letter-spacing:.14em}
-  .act-caption .act-tag{display:none}
-  .act-caption .act-hint{display:none}
-  .act-actions{right:10px;bottom:7px;gap:5px}
-  #actToggle, .act-theater-btn{font-size:10px;padding:3px 8px}
-  #actBanner.collapsed #actToggle{right:12px;top:8px}
   .theater-container{max-width:96vw}
   .theater-frame{max-height:50vh}
   .theater-frame img{max-height:50vh}
@@ -1136,7 +1028,7 @@ header{
         <div class="theater-frame">
           <img id="actTheaterImg" src="/assets/campaigns/ants/art/cover.svg" alt="全幅幕图画卷">
         </div>
-        <div class="theater-format-switch">
+        <div class="theater-format-switch" id="actTheaterFormatSwitch" style="display:none">
           <button class="theater-format-btn active" id="btnArtCinematic"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h3l1.6-2.2h8.8L18 8h3v11H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg> 电影概念大片</button>
           <button class="theater-format-btn" id="btnArtVector"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l4.2-1.1L19 8.1l-3.1-3.1L5.6 15.3z"/><path d="M14.6 6.4l3.1 3.1"/></svg> 典籍矢量画卷</button>
         </div>
@@ -1538,7 +1430,7 @@ async function requestIllustration(bodyEl) {
     const img = document.createElement("img");
     img.alt = "这一幕的配图（点击全屏查看）";
     img.style.cursor = "zoom-in";
-    img.onclick = function () { try { openActTheater(); } catch (e) {} };
+    img.onclick = function () { try { openActTheater(null, this); } catch (e) {} };
     // 图解码进内存后即可释放 blob（否则这张图会一直占着内存）
     // 这张图同时要用作叙事区背景，所以不在这里释放 blob——
     // 生命周期交给背景层（它换下一张时才释放上一张）。
@@ -1612,6 +1504,8 @@ function addTools(tools) {
 
 /* ───── 渲染塔罗式命运抉择卡 ───── */
 function renderCard(card) {
+  // 决策卡要等玩家读题，服务端也在等——这一回合没卡死，别让 90s 超时把它当成卡死重发
+  if (wsTurnTimer) { clearTimeout(wsTurnTimer); wsTurnTimer = null; }
   const box = document.createElement("div");
   box.className = "card-box";
   
@@ -1675,6 +1569,8 @@ function renderCard(card) {
 function sendChoice(text) {
   wsSend({ type: "choice", text });
   clearCard();
+  // 作答之后服务端继续跑这一回合；只挂一个兜底，万一 WS 不通就切 HTTP 拉结果
+  armTurnTimer(() => { httpPollState(); });
 }
 function clearCard() {
   if (cardEl) { cardEl.remove(); cardEl = null; }
@@ -1684,6 +1580,8 @@ function clearCard() {
 let rollEl = null;
 
 function renderRollCard(card) {
+  // 同上：掷骰也要等玩家点，别让 90s 超时把这一回合重发
+  if (wsTurnTimer) { clearTimeout(wsTurnTimer); wsTurnTimer = null; }
   const box = document.createElement("div");
   box.className = "roll-box";
   const modStr = card.mod >= 0 ? "+" + card.mod : String(card.mod);
@@ -1721,6 +1619,7 @@ function renderRollCard(card) {
     box._rollSpin = spin;
     
     wsSend({ type: "roll" });
+    armTurnTimer(() => { httpPollState(); });
   };
   smartScroll();
 }
@@ -1812,7 +1711,8 @@ function renderMainline(m) {
   }
   
   if (chip) chip.textContent = m.title;
-  updateActBanner(m);
+  // 同步当前活跃幕 phaseId（用于剧场灯箱默认高亮当前幕与元信息，原顶部横幅已移除）
+  if (m && m.phaseId) currentActivePhase = m.phaseId;
   if (badge) badge.textContent = m.title.split("·")[0] || "这一幕";
   
   let html = `<div style="font-size:14px;font-weight:700;color:var(--brass-light);margin-bottom:8px;">${esc(m.title)}</div>`;
@@ -1890,9 +1790,13 @@ function renderLedger(ledger) {
 
 let historyRendered = false;
 function renderHistory(turns) {
-  // 幂等：WS init 与 HTTP 轮询都可能触发，历史只完整渲染一次，避免重复
-  if (historyRendered || !turns || !turns.length) return;
+  // 幂等：WS init 与 HTTP 轮询都可能触发，历史只完整渲染一次。
+  // 注意——**即使这一轮没有历史可渲染，也要立刻置位**：新会话首次轮询时 turns 为空，
+  // 若此时不置位，等第一回合结束后的下一次轮询就会把本地已经渲染过的那个回合
+  // 再渲一遍。线上第一句对话必定重复显示一遍，就是这里漏置位造成的。
+  if (historyRendered) return;
   historyRendered = true;
+  if (!turns || !turns.length) return;
   for (const t of turns) {
     if (t.user) addMsg("user", t.user);
     for (const m of t.messages || []) {
@@ -2284,17 +2188,26 @@ async function sendChat() {
   }
 
   wsSend({ type: "chat", text });
+  armTurnTimer(() => {
+    els.input.value = text;
+    sendChat();
+  });
+}
 
-  // WS 回合超时检测：90s 无正文响应（Vercel WS 数据不通）则切 HTTP 并重发同一句
+/**
+ * 回合超时检测：90s 没等到正文（Vercel 上 WS 数据不通）就切 HTTP。
+ * onTimeout 决定怎么收场——首轮发送是「切 HTTP 后重发这一句」；
+ * 决策卡/掷骰作答之后只能「切 HTTP 拉一次结果」，**绝不能再重发**
+ * （重发会让服务端把整个回合重跑一遍，玩家点的那一项也被丢掉）。
+ */
+function armTurnTimer(onTimeout) {
   if (wsTurnTimer) clearTimeout(wsTurnTimer);
   wsTurnTimer = setTimeout(() => {
-    if (busy && !httpMode) {
-      setHttpMode(true);
-      try { ws.close(); } catch {}
-      resetSendBtn();
-      els.input.value = text;
-      sendChat();
-    }
+    if (!busy || httpMode) return;
+    setHttpMode(true);
+    try { ws.close(); } catch {}
+    resetSendBtn();
+    onTimeout();
   }, 90000);
 }
 
@@ -2416,7 +2329,10 @@ els.cardFile.onchange = async () => {
   renderState(st);
 };
 
-/* ───── 幕图：每一幕对应一张配图（神永远不在画面里） ───── */
+/* ───── 幕图与剧场鉴赏（神永远不在画面里 · 唯有台阶、微光与万蚁之行） ───── */
+// 注：六幕固定画已按设计删除，不再重复指向同一张 cover.svg；
+// 剧场画卷展示本回合现场生成的动态插画，纯文本幕名/引文条承载各幕典籍与戒律；
+// cast「全巢图谱」保留专属人物图谱与矢量/电影格式切换。
 const ACT_ART = {
   "p1-theophany": {
     phaseId: "p1-theophany",
@@ -2425,8 +2341,6 @@ const ACT_ART = {
     tag: "夏夜台阶 · 缺笔之名",
     quote: "「全宇宙最尊贵、最仁慈的存在，请不要走。我们尽全巢之力召唤您的降临，只是希望您能聆听我们的声音。」",
     desc: "昏暗声控灯下，白砂糖、飞蛾鳞粉与香灰堆叠出微小而庄严的召唤法阵。数千只工蚁伏地齐诵，末笔悬空，等待神明的一抹垂怜。",
-    primary: "/assets/campaigns/ants/art/cover.svg",
-    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p2-granting": {
     phaseId: "p2-granting",
@@ -2435,18 +2349,14 @@ const ACT_ART = {
     tag: "踏灭强敌 · 创世雪峰",
     quote: "「经上记着，那是天罚——降于邻巢的僭越者。而神赐予了全巢一座山一样高的砂糖。」",
     desc: "超市打折的三块钱普通白砂糖，在暗黑的水泥地上倾倒如巍峨雪峰。对人类只是一脚与两袋糖，对蚁族文明却是翻天覆地的纪元诞生。",
-    primary: "/assets/campaigns/ants/art/cover.svg",
-    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p3-zeal": {
     phaseId: "p3-zeal",
     title: "第三幕 · 狂热",
     subtitle: "一场为你而打的战争开始了",
     tag: "能源爆炸 · 教派分立",
-    quote: "「灰烬派排着队爬到你脚边等候踩踏，断颚高呼神名发动圣战，只有逆默默退入了阴影。」",
-    desc: "庞大糖山驱动地下菌圃与育婴室极限扩张。狂热先知、好战将领与实用主义女王分庭抗礼，微观世界在神的恩泽下迅速走向自我膨胀与裂解。",
-    primary: "/assets/campaigns/ants/art/cover.svg",
-    vector: "/assets/campaigns/ants/art/cover.svg",
+    quote: "「灰烬派排着队爬到你脚边等候践踏，断颔高呼神名发动圣战，只有逆默默退入了阴影。」",
+    desc: "庞大糖山驱动地下菌圃与育婴室极限扩张。狂热先知、好战将领与实用主义女王分庭抗礼，微观世界在神恩下迅速走向自我膨胀与裂解。",
   },
   "p4-lover": {
     phaseId: "p4-lover",
@@ -2454,9 +2364,7 @@ const ACT_ART = {
     subtitle: "您能让我成为她眼中唯一的存在吗",
     tag: "数代之后 · 提米的孤独愿望",
     quote: "「宇……宇宙中最尊贵的存在。我很爱很爱另一只蚂蚁。但她完全不理我。总是……总是无视我。」",
-    desc: "跨越数代之后，编号最不起眼的底层年轻工蚁提米，深夜独自颤抖着爬出巢穴。它献上微小而真挚的心愿，却不知道这会将全巢引向何种深渊。",
-    primary: "/assets/campaigns/ants/art/cover.svg",
-    vector: "/assets/campaigns/ants/art/cover.svg",
+    desc: "跨越数代之后，编号最不起眼的底层年轻工蚁提米，深夜独自颤抖着爬出巢穴。它献上微小而真挚的心愿，却不知这会将全巢引向何种深渊。",
   },
   "p5-collapse": {
     phaseId: "p5-collapse",
@@ -2465,8 +2373,6 @@ const ACT_ART = {
     tag: "覆巢 · 痛悔之泪",
     quote: "「那一天，它从梦中醒来……它只会悔恨地抱头痛哭，质问自己：我他妈都许了什么愿啊。」",
     desc: "神做了一个最平凡的动作——或者，他什么也没做。无论哪一种，这一窝都完了：除了被顺手搁到一边的提米和缇尔，巢里再没有活口。它们醒来时，看到的是彼此，和满地的族人。",
-    primary: "/assets/campaigns/ants/art/cover.svg",
-    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p6-nextgen": {
     phaseId: "p6-nextgen",
@@ -2475,13 +2381,11 @@ const ACT_ART = {
     tag: "晨曦残片 · 判官逆的新生约",
     quote: "「向神许愿时，必须以百分之一万的谨慎态度审视愿望中的每一个字——因为你的愿望极有可能以一种扭曲的方式实现。」——经文第一页 · 落款：逆",
     desc: "长夜过去，冷冽的晨曦斜切进台阶。从未祈愿而幸存的逆带着新生蚁族重新聚拢。旧法阵的痕迹尚存，石板上多了一道用鲜血铸就的永恒戒律。",
-    primary: "/assets/campaigns/ants/art/cover.svg",
-    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "cast": {
     phaseId: "cast",
     title: "全巢图谱 · 群蚁众相",
-    subtitle: "维尔 · 蚁后 · 提米 · 缇尔 · 逆 · 灰烬 · 断颚",
+    subtitle: "维尔 · 蚁后 · 提米 · 缇尔 · 逆 · 灰烬 · 断颔",
     tag: "人物图谱 · 七只蚂蚁各自的命运",
     quote: "「大祭司献媚，女王持重，求爱者盲目，好战者狂暴，唯有冷眼者算清了代价。」",
     desc: "七只具有独特甲壳与触角特征的蚂蚁图谱。每一位都在这场因人类漫不经心的神迹而扭曲的历史中留下了不可磨灭的印记。",
@@ -2494,42 +2398,17 @@ const ACT_KEYS = ["p1-theophany", "p2-granting", "p3-zeal", "p4-lover", "p5-coll
 let currentActivePhase = "p1-theophany";
 let currentTheaterKey = "p1-theophany";
 let artDisplayFormat = "cinematic"; // 'cinematic' (primary) or 'vector' (svg)
+let sessionIllustrationSrc = ""; // 记录当前会话实际生成的插画，避免被重复幕图覆盖
 
 function getArtSrc(item) {
   if (!item) return "";
   if (artDisplayFormat === "cinematic" && item.primary) {
     return item.primary;
   }
-  return item.vector || item.primary;
+  return item.vector || item.primary || "";
 }
 
-function updateActBanner(m) {
-  const img = $("actImg"), no = $("actNo"), tag = $("actTag");
-  if (!img) return;
-  const phaseId = (m && m.phaseId) ? m.phaseId : "p1-theophany";
-  currentActivePhase = phaseId;
-  const info = ACT_ART[phaseId] || ACT_ART["p1-theophany"];
-  if (!info) { img.style.opacity = "0"; return; }
-
-  const targetSrc = getArtSrc(info);
-  const banner = $("actBanner");
-
-  if (img.getAttribute("src") !== targetSrc) {
-    img.style.opacity = "0";
-    img.onerror = () => { img.src = info.vector; };
-    img.onload = () => { img.style.opacity = "1"; };
-    img.setAttribute("src", targetSrc);
-    if (banner) {
-      banner.classList.remove("act-pulse");
-      void banner.offsetWidth;
-      banner.classList.add("act-pulse");
-    }
-  }
-  if (no) no.textContent = info.title;
-  if (tag) tag.textContent = info.tag || info.subtitle;
-}
-
-function renderTheaterAct(key) {
+function renderTheaterAct(key, opts) {
   if (!ACT_ART[key]) key = "p1-theophany";
   currentTheaterKey = key;
   const info = ACT_ART[key];
@@ -2539,22 +2418,39 @@ function renderTheaterAct(key) {
   const desc = $("actTheaterDesc");
   const quote = $("actTheaterQuote");
   const lore = $("actTheaterLore");
+  const formatSwitch = $("actTheaterFormatSwitch");
 
-  const targetSrc = getArtSrc(info);
-  if (img) {
-    img.style.opacity = "0.2";
-    img.onerror = () => { img.src = info.vector; };
-    img.onload = () => { img.style.opacity = "1"; };
-    img.src = targetSrc;
-  }
   if (title) title.textContent = info.title;
   if (desc) desc.textContent = info.subtitle;
   if (quote) quote.textContent = info.quote;
   if (lore) lore.textContent = info.desc;
 
+  // 纯文本幕名/引文条高亮
   document.querySelectorAll(".theater-gallery-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.key === key);
   });
+
+  // 幕图展示策略：固定幕画已按设计删除，不假装每幕有一张独立画
+  // - 若存在专属独立画卷（如 cast 全巢图谱），展示该图并开放电影/矢量格式切换
+  // - 若无独立画卷（六幕剧情），展示本回合实际生成的插画（或封面底图），不重复刷新同一张 cover.svg
+  if (info.primary) {
+    const targetSrc = getArtSrc(info);
+    if (img && img.getAttribute("src") !== targetSrc) {
+      img.style.opacity = "0.2";
+      img.onerror = () => { img.src = info.vector || info.primary; };
+      img.onload = () => { img.style.opacity = "1"; };
+      img.src = targetSrc;
+    }
+    if (formatSwitch) formatSwitch.style.display = "inline-flex";
+  } else {
+    const targetSrc = (opts && opts.customSrc) || sessionIllustrationSrc || "/assets/campaigns/ants/art/cover.jpg";
+    if (img && img.getAttribute("src") !== targetSrc) {
+      img.style.opacity = "0.2";
+      img.onload = () => { img.style.opacity = "1"; };
+      img.src = targetSrc;
+    }
+    if (formatSwitch) formatSwitch.style.display = "none";
+  }
 }
 
 function initTheaterGallery() {
@@ -2565,7 +2461,7 @@ function initTheaterGallery() {
     const b = document.createElement("button");
     b.className = "theater-gallery-btn" + (k === currentTheaterKey ? " active" : "");
     b.dataset.key = k;
-    b.textContent = it.title.split(" · ")[0];
+    b.textContent = it.title;
     b.title = it.title + " · " + it.subtitle;
     b.onclick = (e) => {
       e.stopPropagation();
@@ -2575,20 +2471,20 @@ function initTheaterGallery() {
   });
 }
 
-function openActTheater(initialKey) {
-  // 顶部横幅已移除：灯箱由「点正文下方那张插画」触发，展示本回合的生成图
-  var all = document.querySelectorAll(".msg-illustration img");
-  var latest = all.length ? all[all.length - 1] : null;
-  var tImg = document.getElementById("actTheaterImg");
-  if (tImg && latest && latest.src) tImg.src = latest.src;
-  // 固定幕画已删除：灯箱改为展示当前这一回合的生成图（没有则退封面）
-  var latest = document.querySelector(".msg-illustration img");
-  var tImg = document.getElementById("actTheaterImg");
-  if (tImg && latest && latest.src) tImg.src = latest.src;
+function openActTheater(initialKey, clickedImg) {
+  // 固定幕画与顶部横幅已删除：灯箱由「点正文下方插画」触发，展出被点击的那一张
   const backdrop = $("actTheaterBackdrop");
   if (!backdrop) return;
+  const all = document.querySelectorAll(".msg-illustration img");
+  const target = clickedImg || (all.length ? all[all.length - 1] : null);
+  if (target && target.src) {
+    sessionIllustrationSrc = target.src;
+  } else if (!sessionIllustrationSrc) {
+    sessionIllustrationSrc = "/assets/campaigns/ants/art/cover.jpg";
+  }
   initTheaterGallery();
-  renderTheaterAct(initialKey || currentActivePhase);
+  const key = initialKey || currentActivePhase || "p1-theophany";
+  renderTheaterAct(key, { customSrc: sessionIllustrationSrc });
   backdrop.classList.add("open");
   backdrop.setAttribute("aria-hidden", "false");
 }
@@ -2618,7 +2514,6 @@ $("btnArtCinematic")?.addEventListener("click", (e) => {
   $("btnArtCinematic")?.classList.add("active");
   $("btnArtVector")?.classList.remove("active");
   renderTheaterAct(currentTheaterKey);
-  updateActBanner({ phaseId: currentActivePhase });
 });
 
 $("btnArtVector")?.addEventListener("click", (e) => {
@@ -2627,27 +2522,8 @@ $("btnArtVector")?.addEventListener("click", (e) => {
   $("btnArtVector")?.classList.add("active");
   $("btnArtCinematic")?.classList.remove("active");
   renderTheaterAct(currentTheaterKey);
-  updateActBanner({ phaseId: currentActivePhase });
 });
 
-$("actToggle")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const b = $("actBanner");
-  if (!b) return;
-  b.classList.toggle("collapsed");
-  const isCol = b.classList.contains("collapsed");
-  $("actToggle").innerHTML = (isCol ? ICONS.chevronRight : ICONS.chevronUp) + " <span>" + (isCol ? "展开幕图" : "收起幕图") + "</span>";
-});
-
-$("actTheaterBtn")?.addEventListener("click", (e) => { e.stopPropagation(); openActTheater(); });
-$("actImg")?.addEventListener("click", (e) => {
-  if ($("actBanner")?.classList.contains("collapsed")) return;
-  openActTheater();
-});
-document.querySelector(".act-caption")?.addEventListener("click", (e) => {
-  if (e.target.closest("#actToggle") || e.target.closest("#actTheaterBtn")) return;
-  openActTheater();
-});
 $("actTheaterClose")?.addEventListener("click", closeActTheater);
 $("actTheaterBackdrop")?.addEventListener("click", (e) => {
   if (e.target === $("actTheaterBackdrop")) closeActTheater();
@@ -2671,7 +2547,7 @@ void httpPollState();
 (function () {
   var el = document.getElementById("actBackdrop");
   if (!el) return;
-  var FALLBACK = "/assets/campaigns/ants/art/cover.svg";
+  var FALLBACK = "/assets/campaigns/ants/art/cover.jpg";
   var cur = "";
   function set(url) {
     if (!url || url === cur) return;
