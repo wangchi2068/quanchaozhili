@@ -1076,7 +1076,7 @@ header{
           <svg class="svg-icon" viewBox="0 0 24 24" style="color:var(--brass-gold);"><polygon points="12 3 21 12 12 21 3 12 12 3"/></svg>
           <span id="chipArcText">第一幕 · 显灵</span>
         </div>
-        <div class="chip" id="chipCard" title="你是谁">神 · 一个普通人</div>
+        <div class="chip" id="chipCard" title="你是谁">神 · 张亮</div>
         <div class="chip" id="chipModel" title="驱动模型">模型：—</div>
 
         <!-- 经文负荷（上下文用量） -->
@@ -1156,7 +1156,7 @@ header{
       <div class="arc-intro-banner" id="emptyTip">
         <div class="arc-intro-title">台 阶 · 降 临</div>
         <div class="arc-intro-desc">
-          想象一下，你在某次路过家门口时，突然发现一群蚂蚁用亮晶晶的粉末画了一个圆形法阵，蚂蚁们还用自己的身体摆出了你名字的笔画，智力最高的几个蚂蚁甚至还学会了发声，它们集体诵念你的名。<br><br>
+          想象一下，你在某次路过家门口时，突然发现一群蚂蚁用亮晶晶的粉末画了一个圆形法阵，蚂蚁们还用自己的身体拼出了「张亮」两个字，智力最高的几个蚂蚁甚至还学会了发声，它们集体诵念着你的名字。<br><br>
           如果这种情况真的发生了，在座有几个人能按捺住自己的好奇心不去看一眼？看了十几分钟，好奇心得到满足，也拍了照发朋友圈后，你准备离开了——<br><br>
           但蚂蚁们突然开口：<br>
           <strong style="color:var(--gold-primary);">「全宇宙最尊贵、最仁慈的存在，请不要走，我们尽全巢蚂蚁之力召唤您的降临，只是希望您能聆听我们的愿望！」</strong><br><br>
@@ -1485,7 +1485,7 @@ function addMsg(role, text) {
   
   const meta = document.createElement("div");
   meta.className = "meta";
-  meta.textContent = role === "user" ? "你 · 下班回家的普通人" : "台阶之下 · 蚁巢";
+  meta.textContent = role === "user" ? "你 · 张亮" : "台阶之下 · 蚁巢";
   
   const now = new Date();
   const ts = document.createElement("span");
@@ -1773,7 +1773,7 @@ function esc(s) {
 }
 
 function renderState(st) {
-  $("chipCard").textContent = "神 · " + (st.cardName ? "" : "一个普通人");
+  $("chipCard").textContent = "神 · 张亮";
   $("chipModel").textContent = st.model;
   $("stBudget").textContent = Math.round(st.budgetChars / 1000) + "k 字符";
   $("stWindow").textContent = `${st.windowTurns} / ${st.totalTurns} 回合`;
