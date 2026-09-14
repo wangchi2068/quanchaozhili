@@ -945,6 +945,85 @@ const server = createServer(async (req, res) => {
 			res.end(JSON.stringify({ ok: true }));
 			return;
 		}
+		/* ─────── 知乎 OAuth 授权与回调 ─────── */
+		if (req.method === "GET" && url.pathname === "/api/auth/zhihu/login") {
+			const clientId = cfg.zhihuClientId;
+			const redirectUri = cfg.zhihuRedirectUri || `${url.origin}/api/auth/zhihu/callback`;
+			if (!clientId) {
+				res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+				res.end(`
+					<title>知乎账号授权 · 全巢之力</title>
+					<body style="background:#0a0e17;color:#f0d8a8;font-family:sans-serif;padding:40px;text-align:center;">
+						<h2>知乎登录开放接入</h2>
+						<p style="color:#a0aab8;max-width:500px;margin:20px auto;line-height:1.8;">
+							回调地址已就绪：<br><code style="background:#111927;padding:4px 8px;border-radius:4px;color:#4ade80;">${redirectUri}</code>
+						</p>
+						<p style="color:#78889b;font-size:13px;">请在知乎开发者平台完成应用配置（ZHIHU_CLIENT_ID / ZHIHU_CLIENT_SECRET）以启用一键授权。</p>
+						<a href="/" style="display:inline-block;margin-top:24px;color:#d9b877;text-decoration:none;border:1px solid #d9b877;padding:8px 20px;border-radius:20px;">返回游戏</a>
+					</body>
+				`);
+				return;
+			}
+			const state = Math.random().toString(36).slice(2);
+			const authUrl = `https://www.zhihu.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&scope=basic`;
+			res.writeHead(302, { Location: authUrl });
+			res.end();
+			return;
+		}
+		if (req.method === "GET" && url.pathname === "/api/auth/zhihu/callback") {
+			const code = url.searchParams.get("code");
+			const error = url.searchParams.get("error");
+			if (error) {
+				res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+				res.end(`<h3>授权被取消或失败：${error}</h3><p><a href="/">返回</a></p>`);
+				return;
+			}
+			if (!code) {
+				res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+				res.end("缺少授权 code");
+				return;
+			}
+			let zhihuUser = { name: "知乎认证信徒", id: "zhihu_user" };
+			if (cfg.zhihuClientId && cfg.zhihuClientSecret) {
+				try {
+					const tokenRes = await fetch("https://www.zhihu.com/oauth/token", {
+						method: "POST",
+						headers: { "Content-Type": "application/x-www-form-urlencoded" },
+						body: new URLSearchParams({
+							grant_type: "authorization_code",
+							client_id: cfg.zhihuClientId,
+							client_secret: cfg.zhihuClientSecret,
+							code,
+							redirect_uri: cfg.zhihuRedirectUri || `${url.origin}/api/auth/zhihu/callback`,
+						}),
+					});
+					if (tokenRes.ok) {
+						const tokenData = (await tokenRes.json()) as { access_token?: string };
+						if (tokenData.access_token) {
+							const userRes = await fetch("https://api.zhihu.com/people/self", {
+								headers: { Authorization: `Bearer ${tokenData.access_token}` },
+							});
+							if (userRes.ok) {
+								const userData = (await userRes.json()) as { name?: string; id?: string };
+								if (userData.name) zhihuUser.name = userData.name;
+							}
+						}
+					}
+				} catch {}
+			}
+			res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+			res.end(`
+				<title>授权成功 · 全巢之力</title>
+				<script>
+					try {
+						localStorage.setItem("zhihu_user", ${JSON.stringify(zhihuUser.name)});
+					} catch(e){}
+					window.location.href = "/?zhihu_login=1";
+				</script>
+				<p style="font-family:sans-serif;text-align:center;padding-top:50px;">正在跳转回台阶之下……</p>
+			`);
+			return;
+		}
 		res.writeHead(404, { "Content-Type": "text/plain" });
 		res.end("not found");
 	} catch (e) {

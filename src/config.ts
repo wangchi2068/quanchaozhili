@@ -51,6 +51,10 @@ export interface Config {
   illustrationDailyMax: number;
   /** 单张图的超时（毫秒） */
   illustrationTimeoutMs: number;
+  /** 知乎 OAuth 配置（接入知乎账号登录） */
+  zhihuClientId?: string;
+  zhihuClientSecret?: string;
+  zhihuRedirectUri?: string;
 }
 
 /** 极简 .env 加载器（不覆盖已存在的环境变量） */
@@ -99,6 +103,9 @@ export function loadConfig(): Config {
     illustrationMaxPerSession: Number(process.env.WANGDACHUI_ILLUSTRATION_MAX ?? 30),
     illustrationDailyMax: Number(process.env.WANGDACHUI_ILLUSTRATION_DAILY_MAX ?? 150),
     illustrationTimeoutMs: Number(process.env.WANGDACHUI_ILLUSTRATION_TIMEOUT_MS ?? 60000),
+    zhihuClientId: process.env.ZHIHU_CLIENT_ID || undefined,
+    zhihuClientSecret: process.env.ZHIHU_CLIENT_SECRET || undefined,
+    zhihuRedirectUri: process.env.ZHIHU_REDIRECT_URI || undefined,
   };
 }
 
