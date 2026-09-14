@@ -2692,6 +2692,26 @@ void httpPollState();
   };
   sync();
 })();
+/* ── 幕图横幅：首次访问默认收起，并记住用户的选择 ── */
+/* 幕画已作为叙事区背景常驻，顶部那条实体横幅没必要再占 92px。 */
+(function () {
+  var b = document.getElementById("actBanner");
+  var t = document.getElementById("actToggle");
+  if (!b || !t) return;
+  var K = "wd.banner.collapsed";
+  function label() {
+    var col = b.classList.contains("collapsed");
+    var ic = (typeof ICONS !== "undefined" && (col ? ICONS.chevronRight : ICONS.chevronUp)) || "";
+    t.innerHTML = ic + " <span>" + (col ? "展开幕图" : "收起幕图") + "</span>";
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(K); } catch (e) {}
+  if (saved === null || saved === '1') b.classList.add('collapsed');
+  label();
+  t.addEventListener("click", function () {
+    try { localStorage.setItem(K, b.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
+  });
+})();
 </script>
 </body>
 </html>
