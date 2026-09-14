@@ -21,6 +21,18 @@ const defaultState = (arc: Phase[]): DirectorState => ({
 });
 
 /**
+ * 阶段 id 的历史改名映射。
+ * 推进本身记的是 phaseIndex（数字下标），所以改 id 不会让老存档跑偏；
+ * 只有留痕用的 unlocked 里会残留旧名，读回来时归一化，免得 /phase 之类的
+ * 展示里冒出一个 arc 里已经不存在的 id。
+ */
+const LEGACY_PHASE_IDS: Record<string, string> = {
+	// 第五幕原本只认「一壶开水」这条唯一解，后改为「覆巢」：结果固定（巢内除提米、
+	// 缇尔外全灭），方法不限（倒水、拖地、扫地、一脚，乃至放任不管都成立）。
+	"p5-boiling": "p5-collapse",
+};
+
+/**
  * 主线导演：以规则驱动三幕大纲的推进。
  * - 回合后调用 advance()：把最近剧情文本与当前阶段的解锁关键词比对，
  *   命中且回合数达标 → 推进到下一阶段；
@@ -58,6 +70,8 @@ export class Director {
 							: 0,
 					unlocked: Array.isArray(parsed.unlocked)
 						? parsed.unlocked
+								.filter((id): id is string => typeof id === "string")
+								.map((id) => LEGACY_PHASE_IDS[id] ?? id)
 						: base.unlocked,
 					advancedAt:
 						typeof parsed.advancedAt === "string"
@@ -137,14 +151,26 @@ export class Director {
 			return { advanced: false };
 		}
 		const ctx = contextText.toLowerCase();
-		// 强制推进幕（autoAdvance）忽略关键词：只要回合门槛与间隔达标就推进，
-		// 用于「玩家可能永远不主动选择，但主线必须发生」的锚点。
-		const hit =
-			phase.autoAdvance === true
-				? true
-				: (phase.unlockKeywords ?? []).some((k) =>
-						ctx.includes(k.toLowerCase()),
-					);
+		// 关键词命中：本幕的目标/收束戏真的演到了
+		const unlockHit = (phase.unlockKeywords ?? []).some((k) =>
+			ctx.includes(k.toLowerCase()),
+		);
+		// 收束闸门（codaKeywords）：本幕必须落在某句话上时，等那句话真的写出来才翻页。
+		// autoAdvance 在这里退化为「超时兜底」——不这样收，它会无条件跳过关卡，
+		// 「这一幕必须以某个画面收尾」就只剩下提示词在碰运气（实测会整段丢掉落点）。
+		const coda = phase.codaKeywords ?? [];
+		let hit: boolean;
+		if (coda.length > 0) {
+			const codaHit = coda.some((k) => ctx.includes(k.toLowerCase()));
+			const overdue =
+				turnCount - (this.state.phaseEnteredTurn ?? 0) >=
+				(phase.minTurnsInPhase ?? 0) + (phase.codaGrace ?? 2);
+			hit = codaHit || (phase.autoAdvance === true && overdue);
+		} else {
+			// 强制推进幕（autoAdvance）忽略关键词：只要回合门槛与间隔达标就推进，
+			// 用于「玩家可能永远不主动选择，但主线必须发生」的锚点。
+			hit = phase.autoAdvance === true || unlockHit;
+		}
 		if (!hit) return { advanced: false };
 
 		const next = this.arc[idx + 1]!;

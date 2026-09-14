@@ -25,8 +25,19 @@ export interface Phase {
   /**
    * 强制推进：忽略 unlockKeywords，只要回合数达标（且满足防连跳间隔）就推进到下一幕。
    * 用于「不可回避的主线锚点」——例如玩家可能不会主动选择的悲剧转折。
+   * 注意：本幕若同时设了 codaKeywords，收束闸门优先——autoAdvance 退化为超时兜底。
    */
   autoAdvance?: boolean;
+  /**
+   * 收束闸门：本幕必须等到这些词之一真的出现在剧情里，才允许翻到下一幕。
+   * 用处——把「这一幕必须以某句话/某个画面收尾」从"提示词碰运气"变成硬条件：
+   * 第五幕的落点是提米那句「我他妈都许了什么愿啊」，那就得等这句话真的写出来，
+   * 否则一幕可以演完灾难就直接翻页，把落点整段丢掉。
+   * 与 autoAdvance 并存时，autoAdvance 只作为超时兜底（见 codaGrace），不再无条件跳过。
+   */
+  codaKeywords?: string[];
+  /** 收束闸门的兜底宽限（回合）：本幕停留超过 minTurnsInPhase + codaGrace 仍未命中时强推，防卡死。默认 2 */
+  codaGrace?: number;
   /** 刚推进到本阶段时，注入一次的事件钩子（把剧情推向下一幕） */
   eventHint?: string;
   /** 本幕情绪基调（导演注入 system，防平铺流水账） */

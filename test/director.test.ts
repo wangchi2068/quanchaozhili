@@ -208,6 +208,87 @@ test("导演：终局阶段不再推进；状态持久化", () => {
 	}
 });
 
+test("导演：老存档里改名前残留的阶段 id 会被归一化", () => {
+	const dir = freshDir();
+	try {
+		// 模拟改名前的存档：推进下标不变，只有留痕的 unlocked 里记着旧 id
+		const store = openStore(dir);
+		store.kvSet(
+			"director",
+			JSON.stringify({
+				phaseIndex: 1,
+				unlocked: ["p1-awakening", "p5-boiling"],
+			}),
+		);
+		store.close();
+		const d = new Director(dir);
+		assert.equal(d.currentPhase().id, "p2-meet");
+		assert.deepEqual(d.summary().unlocked, ["p1-awakening", "p5-collapse"]);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+/** 收束闸门用的两幕骨架：幕B 必须落在某个句子上，超时 2 回合兜底 */
+function codaArc(): Phase[] {
+	return [
+		{ id: "a", act: 1, title: "幕A", summary: "", objectives: [], unlockKeywords: ["x"], minTurns: 1 },
+		{
+			id: "b",
+			act: 1,
+			title: "幕B",
+			summary: "",
+			objectives: [],
+			unlockKeywords: [],
+			minTurns: 1,
+			minTurnsInPhase: 2,
+			autoAdvance: true,
+			codaKeywords: ["我他妈都许了什么愿啊"],
+		},
+		{ id: "c", act: 1, title: "幕C", summary: "", objectives: [], unlockKeywords: ["x"], minTurns: 1 },
+	];
+}
+
+test("导演：收束闸门——落点没写出来就不许翻页（autoAdvance 不算数）", () => {
+	const dir = freshDir();
+	try {
+		const d = new Director(dir, codaArc());
+		assert.equal(d.advance("x", 1).advanced, true); // 进幕B，phaseEnteredTurn=1
+		assert.equal(d.currentPhase().id, "b");
+		// 灾难写完了、落点没写：本幕第 1~3 回合都不推进（autoAdvance 被闸门挡住）
+		for (const t of [2, 3, 4]) {
+			assert.equal(
+				d.advance("覆巢了，满地尸体，神转身回屋", t).advanced,
+				false,
+				`第${t}回合不该推进`,
+			);
+		}
+		// 本幕第 4 回合：minTurnsInPhase(2) + 宽限(2) 已到，超时兜底强推，防卡死
+		assert.equal(d.advance("覆巢了，满地尸体，神转身回屋", 5).advanced, true);
+		assert.equal(d.currentPhase().id, "c");
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test("导演：收束闸门——落点一写出来，回合门槛一到就翻页", () => {
+	const dir = freshDir();
+	try {
+		const d = new Director(dir, codaArc());
+		d.advance("x", 1); // 进幕B
+		// 本幕第 1 回合：落点还没写，不推进
+		assert.equal(d.advance("提米还没醒", 2).advanced, false);
+		// 本幕第 2 回合（minTurnsInPhase 恰好到位）：提米那句话写出来了 → 立刻推进
+		assert.equal(
+			d.advance("提米醒来，抱着头痛哭：我他妈都许了什么愿啊", 3).advanced,
+			true,
+		);
+		assert.equal(d.currentPhase().id, "c");
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
 test("导演：reset 回到第一幕", () => {
 	const dir = freshDir();
 	try {
