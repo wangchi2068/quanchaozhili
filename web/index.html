@@ -1121,28 +1121,6 @@ header{
     <div id="ctxBarWrap"><div id="ctxBar"></div></div>
 
     <!-- 幕图：微距夜行环境视窗 + 剧场画卷（神永远不在画面里） -->
-    <div id="actBanner">
-      <img id="actImg" src="/assets/campaigns/ants/art/cover.svg" alt="第一幕 · 显灵" title="点击展开全幅画卷">
-      <div class="act-caption" title="点击展开全幅画卷">
-        <span class="act-no" id="actNo">第一幕 · 显灵</span>
-        <span class="act-tag" id="actTag">它们用亮晶晶的粉末画了一个圆</span>
-        <span class="act-hint">
-          <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/><circle cx="11" cy="11" r="2.5"/><circle cx="11" cy="11" r="0.8" fill="currentColor"/></svg>
-          <span>全卷</span>
-        </span>
-      </div>
-      <div class="act-actions">
-        <button class="act-theater-btn" id="actTheaterBtn" title="全幅画卷鉴赏">
-          <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="12 2 14.5 9.5 22 12 14.5 14.5 12 22 9.5 14.5 2 12 9.5 9.5 12 2"/></svg>
-          <span>全卷</span>
-        </button>
-        <button id="actToggle" title="收起/展开幕图">
-          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-          <span>收起幕图</span>
-        </button>
-      </div>
-    </div>
-
     <!-- 剧场级画卷鉴赏模态 -->
     <div class="act-theater-backdrop" id="actTheaterBackdrop" aria-hidden="true">
       <div class="theater-container" id="actTheaterContainer">
@@ -1558,7 +1536,9 @@ async function requestIllustration(bodyEl) {
     const prompt = decodeURIComponent(r.headers.get("X-Illustration-Prompt") || "");
     objUrl = URL.createObjectURL(await r.blob());
     const img = document.createElement("img");
-    img.alt = "这一幕的配图";
+    img.alt = "这一幕的配图（点击全屏查看）";
+    img.style.cursor = "zoom-in";
+    img.onclick = function () { try { openActTheater(); } catch (e) {} };
     // 图解码进内存后即可释放 blob（否则这张图会一直占着内存）
     // 这张图同时要用作叙事区背景，所以不在这里释放 blob——
     // 生命周期交给背景层（它换下一张时才释放上一张）。
@@ -2596,6 +2576,11 @@ function initTheaterGallery() {
 }
 
 function openActTheater(initialKey) {
+  // 顶部横幅已移除：灯箱由「点正文下方那张插画」触发，展示本回合的生成图
+  var all = document.querySelectorAll(".msg-illustration img");
+  var latest = all.length ? all[all.length - 1] : null;
+  var tImg = document.getElementById("actTheaterImg");
+  if (tImg && latest && latest.src) tImg.src = latest.src;
   // 固定幕画已删除：灯箱改为展示当前这一回合的生成图（没有则退封面）
   var latest = document.querySelector(".msg-illustration img");
   var tImg = document.getElementById("actTheaterImg");
@@ -2696,26 +2681,6 @@ void httpPollState();
   }
   set(FALLBACK);
   window.__setActBackdrop = set;
-})();
-/* ── 幕图横幅：首次访问默认收起，并记住用户的选择 ── */
-/* 幕画已作为叙事区背景常驻，顶部那条实体横幅没必要再占 92px。 */
-(function () {
-  var b = document.getElementById("actBanner");
-  var t = document.getElementById("actToggle");
-  if (!b || !t) return;
-  var K = "wd.banner.collapsed";
-  function label() {
-    var col = b.classList.contains("collapsed");
-    var ic = (typeof ICONS !== "undefined" && (col ? ICONS.chevronRight : ICONS.chevronUp)) || "";
-    t.innerHTML = ic + " <span>" + (col ? "展开幕图" : "收起幕图") + "</span>";
-  }
-  var saved = null;
-  try { saved = localStorage.getItem(K); } catch (e) {}
-  if (saved === null || saved === '1') b.classList.add('collapsed');
-  label();
-  t.addEventListener("click", function () {
-    try { localStorage.setItem(K, b.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
-  });
 })();
 </script>
 </body>
