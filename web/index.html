@@ -1008,6 +1008,21 @@ header{
   .card-box,.roll-box{max-width:100%;margin-left:0;padding:16px 14px}
 }
 
+
+/* 首屏署名与声明：评委打开链接即可见，不必去翻仓库 */
+.arc-intro-credit{
+  margin:0 auto 22px;max-width:560px;padding:14px 18px;text-align:left;
+  border:1px solid var(--border-brass);border-radius:10px;
+  background:rgba(255,255,255,.028);
+  font-size:12px;line-height:1.95;color:var(--text-muted);
+}
+.arc-intro-credit .credit-src{color:var(--text-muted);margin-bottom:6px}
+.arc-intro-credit .credit-src strong{color:var(--brass-light)}
+.arc-intro-credit a{color:var(--lamplight);text-decoration:none;border-bottom:1px dashed var(--border-brass)}
+.arc-intro-credit a:hover{border-bottom-style:solid}
+.arc-intro-credit .credit-note{color:var(--text-dark);font-size:11.5px;margin-top:4px}
+.arc-intro-credit .credit-note strong{color:var(--text-muted)}
+@media (max-width:900px){.arc-intro-credit{font-size:11.5px;padding:11px 14px}}
 </style>
 </head>
 <body>
@@ -1140,6 +1155,13 @@ header{
           但蚂蚁们突然开口：<br>
           <strong style="color:var(--gold-primary);">「全宇宙最尊贵、最仁慈的存在，请不要走，我们尽全巢蚂蚁之力召唤您的降临，只是希望您能聆听我们的愿望！」</strong><br><br>
           你正好有空，于是你准备听听蚂蚁们的发言……
+        </div>
+        <div class="arc-intro-credit">
+          <div class="credit-src">改编自知乎答主 <strong>@狐狸</strong> 的回答
+            《克苏鲁可以被卑微的人类召唤，那人类可以被蚂蚁召唤吗？》
+            <a href="https://www.zhihu.com/question/621853865/answer/3263972389" target="_blank" rel="noopener">原文链接</a></div>
+          <div class="credit-note">第 1-5 幕忠于原著情节，第 6 幕为 AI 演绎补完；仿的是《大决战》式的军事腔调，<strong>未逐字复制原文长段</strong>，非原作者作品。</div>
+          <div class="credit-note">本项目为知乎黑客松参赛演示，属非商业性的衍生技术探索；赛后如需使用请联系原作者。</div>
         </div>
         <div class="arc-intro-hints">
           <span class="arc-intro-hint">/phase 这一幕的目标</span>

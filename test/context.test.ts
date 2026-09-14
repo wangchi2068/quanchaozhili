@@ -44,6 +44,12 @@ function makeConfig(dir: string, budget: number, maxTurns = 5): Config {
 		stateDir: dir,
 		autoSnapshotEvery: 0,
 		maxTokensPerDay: 0,
+		illustrationEnabled: false,
+		illustrationModel: "mock-image",
+		illustrationSize: "1024x1024",
+		illustrationMaxPerSession: 0,
+		illustrationDailyMax: 0,
+		illustrationTimeoutMs: 1000,
 	};
 }
 

@@ -63,6 +63,12 @@ function cfgWithFallbacks(primary: { apiBase: string; apiKey: string; model: str
     stateDir: "/tmp",
     autoSnapshotEvery: 0,
     maxTokensPerDay: 0,
+    illustrationEnabled: false,
+    illustrationModel: "mock-image",
+    illustrationSize: "1024x1024",
+    illustrationMaxPerSession: 0,
+    illustrationDailyMax: 0,
+    illustrationTimeoutMs: 1000,
   };
 }
 
