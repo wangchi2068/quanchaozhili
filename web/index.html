@@ -1122,7 +1122,7 @@ header{
 
     <!-- 幕图：微距夜行环境视窗 + 剧场画卷（神永远不在画面里） -->
     <div id="actBanner">
-      <img id="actImg" src="/assets/campaigns/ants/art/act1.svg" alt="第一幕 · 显灵" title="点击展开全幅画卷">
+      <img id="actImg" src="/assets/campaigns/ants/art/cover.svg" alt="第一幕 · 显灵" title="点击展开全幅画卷">
       <div class="act-caption" title="点击展开全幅画卷">
         <span class="act-no" id="actNo">第一幕 · 显灵</span>
         <span class="act-tag" id="actTag">它们用亮晶晶的粉末画了一个圆</span>
@@ -1156,7 +1156,7 @@ header{
           <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <div class="theater-frame">
-          <img id="actTheaterImg" src="/assets/campaigns/ants/art/act1.jpg" alt="全幅幕图画卷">
+          <img id="actTheaterImg" src="/assets/campaigns/ants/art/cover.svg" alt="全幅幕图画卷">
         </div>
         <div class="theater-format-switch">
           <button class="theater-format-btn active" id="btnArtCinematic"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h3l1.6-2.2h8.8L18 8h3v11H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg> 电影概念大片</button>
@@ -1560,8 +1560,9 @@ async function requestIllustration(bodyEl) {
     const img = document.createElement("img");
     img.alt = "这一幕的配图";
     // 图解码进内存后即可释放 blob（否则这张图会一直占着内存）
-    img.onload = () => { if (objUrl) URL.revokeObjectURL(objUrl); };
-    img.onerror = () => { if (objUrl) URL.revokeObjectURL(objUrl); };
+    // 这张图同时要用作叙事区背景，所以不在这里释放 blob——
+    // 生命周期交给背景层（它换下一张时才释放上一张）。
+    if (objUrl && window.__setActBackdrop) window.__setActBackdrop(objUrl);
     img.src = objUrl;
     if (prompt) fig.title = prompt;
     const cap = document.createElement("figcaption");
@@ -2444,8 +2445,8 @@ const ACT_ART = {
     tag: "夏夜台阶 · 缺笔之名",
     quote: "「全宇宙最尊贵、最仁慈的存在，请不要走。我们尽全巢之力召唤您的降临，只是希望您能聆听我们的声音。」",
     desc: "昏暗声控灯下，白砂糖、飞蛾鳞粉与香灰堆叠出微小而庄严的召唤法阵。数千只工蚁伏地齐诵，末笔悬空，等待神明的一抹垂怜。",
-    primary: "/assets/campaigns/ants/art/act1.jpg",
-    vector: "/assets/campaigns/ants/art/act1.svg",
+    primary: "/assets/campaigns/ants/art/cover.svg",
+    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p2-granting": {
     phaseId: "p2-granting",
@@ -2454,8 +2455,8 @@ const ACT_ART = {
     tag: "踏灭强敌 · 创世雪峰",
     quote: "「经上记着，那是天罚——降于邻巢的僭越者。而神赐予了全巢一座山一样高的砂糖。」",
     desc: "超市打折的三块钱普通白砂糖，在暗黑的水泥地上倾倒如巍峨雪峰。对人类只是一脚与两袋糖，对蚁族文明却是翻天覆地的纪元诞生。",
-    primary: "/assets/campaigns/ants/art/act2.jpg",
-    vector: "/assets/campaigns/ants/art/act2.svg",
+    primary: "/assets/campaigns/ants/art/cover.svg",
+    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p3-zeal": {
     phaseId: "p3-zeal",
@@ -2464,8 +2465,8 @@ const ACT_ART = {
     tag: "能源爆炸 · 教派分立",
     quote: "「灰烬派排着队爬到你脚边等候踩踏，断颚高呼神名发动圣战，只有逆默默退入了阴影。」",
     desc: "庞大糖山驱动地下菌圃与育婴室极限扩张。狂热先知、好战将领与实用主义女王分庭抗礼，微观世界在神的恩泽下迅速走向自我膨胀与裂解。",
-    primary: "/assets/campaigns/ants/art/act3.jpg",
-    vector: "/assets/campaigns/ants/art/act3.svg",
+    primary: "/assets/campaigns/ants/art/cover.svg",
+    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p4-lover": {
     phaseId: "p4-lover",
@@ -2474,18 +2475,18 @@ const ACT_ART = {
     tag: "数代之后 · 提米的孤独愿望",
     quote: "「宇……宇宙中最尊贵的存在。我很爱很爱另一只蚂蚁。但她完全不理我。总是……总是无视我。」",
     desc: "跨越数代之后，编号最不起眼的底层年轻工蚁提米，深夜独自颤抖着爬出巢穴。它献上微小而真挚的心愿，却不知道这会将全巢引向何种深渊。",
-    primary: "/assets/campaigns/ants/art/act4.jpg",
-    vector: "/assets/campaigns/ants/art/act4.svg",
+    primary: "/assets/campaigns/ants/art/cover.svg",
+    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p5-boiling": {
     phaseId: "p5-boiling",
-    title: "第五幕 · 开水",
-    subtitle: "一壶开水与满地的族人尸体",
-    tag: "天火大洪水 · 痛悔之泪",
+    title: "第五幕 · 覆巢",
+    subtitle: "满地的族人尸体，与仅存的两只",
+    tag: "覆巢 · 痛悔之泪",
     quote: "「那一天，它从梦中醒来……它只会悔恨地抱头痛哭，质问自己：我他妈都许了什么愿啊。」",
-    desc: "家庭厨房里随手烧沸的水壶，倾泻而下化作灭世的滚烫大洪水。整个巢穴沦为白汽蒸腾的死寂废墟，神以最残忍而字面化的方式达成了愿望。",
-    primary: "/assets/campaigns/ants/art/act5.jpg",
-    vector: "/assets/campaigns/ants/art/act5.svg",
+    desc: "神做了一个最平凡的动作——或者，他什么也没做。无论哪一种，这一窝都完了：除了被顺手搁到一边的提米和缇尔，巢里再没有活口。它们醒来时，看到的是彼此，和满地的族人。",
+    primary: "/assets/campaigns/ants/art/cover.svg",
+    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "p6-nextgen": {
     phaseId: "p6-nextgen",
@@ -2494,8 +2495,8 @@ const ACT_ART = {
     tag: "晨曦残片 · 判官逆的新生约",
     quote: "「神应允一切。所以许愿之前，先把每一个字看一万遍。——落款：逆」",
     desc: "长夜过去，冷冽的晨曦斜切进台阶。从未祈愿而幸存的逆带着新生蚁族重新聚拢。旧法阵的痕迹尚存，石板上多了一道用鲜血铸就的永恒戒律。",
-    primary: "/assets/campaigns/ants/art/act6.jpg",
-    vector: "/assets/campaigns/ants/art/act6.svg",
+    primary: "/assets/campaigns/ants/art/cover.svg",
+    vector: "/assets/campaigns/ants/art/cover.svg",
   },
   "cast": {
     phaseId: "cast",
@@ -2595,6 +2596,10 @@ function initTheaterGallery() {
 }
 
 function openActTheater(initialKey) {
+  // 固定幕画已删除：灯箱改为展示当前这一回合的生成图（没有则退封面）
+  var latest = document.querySelector(".msg-illustration img");
+  var tImg = document.getElementById("actTheaterImg");
+  if (tImg && latest && latest.src) tImg.src = latest.src;
   const backdrop = $("actTheaterBackdrop");
   if (!backdrop) return;
   initTheaterGallery();
@@ -2673,24 +2678,24 @@ window.addEventListener("keydown", (e) => {
 connect();
 // 保底：不管 WS 通不通，先用 HTTP 拉一次状态与历史（WS 永久不可用时存档/历史也能载入）
 void httpPollState();
-/* ── 幕图虚化背景：跟随当前幕的图源 ── */
+/* ── 叙事区虚化背景 ──
+ * 固定幕画已删除，改由「每回合现场生成的那张图」驱动：
+ * 首屏用封面兜底，之后每回合配图到手就换成那一张（图是当前的画面，比六张定妆图更贴）。
+ * blob URL 的生命周期由这里接管——换新图时才释放旧的，避免背景变空。
+ */
 (function () {
   var el = document.getElementById("actBackdrop");
-  if (!el || typeof updateActBanner !== "function") return;
-  function sync() {
-    var img = document.getElementById("actImg");
-    var src = img && img.getAttribute("src");
-    if (!src || el.dataset.src === src) return;
-    el.dataset.src = src;
-    el.style.backgroundImage = 'url("' + src + '")';
+  if (!el) return;
+  var FALLBACK = "/assets/campaigns/ants/art/cover.svg";
+  var cur = "";
+  function set(url) {
+    if (!url || url === cur) return;
+    if (cur.indexOf("blob:") === 0) { try { URL.revokeObjectURL(cur); } catch (e) {} }
+    cur = url;
+    el.style.backgroundImage = 'url("' + url + '")';
   }
-  var orig = updateActBanner;
-  window.updateActBanner = function () {
-    var r = orig.apply(this, arguments);
-    try { sync(); } catch (e) {}
-    return r;
-  };
-  sync();
+  set(FALLBACK);
+  window.__setActBackdrop = set;
 })();
 /* ── 幕图横幅：首次访问默认收起，并记住用户的选择 ── */
 /* 幕画已作为叙事区背景常驻，顶部那条实体横幅没必要再占 92px。 */
